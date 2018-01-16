@@ -96,7 +96,8 @@ systemctl restart elasticsearch
 
 echo -e "\e[32mInstalling nginx...\e[39m"
 yum -y install httpd-tools
-yum -y --nogpgcheck install nginx
+#yum --showduplicates list nginx
+yum -y --nogpgcheck install nginx-1:1.12.0-1.el7.ngx.x86_64
 
 #Encrypt password so we can pass through here
 echo -e "\e[32mInstalling htpasswd file for admin user...\e[39m"
@@ -189,7 +190,7 @@ cat <<'EOF' >> /etc/nginx/conf.d/kibana.conf
 server {
     listen 80;
 
-    server_name elk1-02.prod.com;
+    server_name tsys-elk1-01.sv5.us.genprod;
 
     return 301 https://$host$request_uri;
 
@@ -198,7 +199,7 @@ server {
 server {
     listen       443 ssl http2 default_server;
 
-    server_name elk1-02.prod.com;
+    server_name tsys-elk1-01.sv5.us.genprod;
 
     auth_basic "Restricted Access";
     auth_basic_user_file /etc/nginx/htpasswd.users;
@@ -361,6 +362,26 @@ filter {
     grok {
 	match => [ "message", "%{SYSLOGTIMESTAMP:syslog_timestamp} %{SYSLOGHOST:syslog_hostname} %{DATA:syslog_program}(?:\[%{POSINT:syslog_pid}\])?: %{GREEDYDATA:syslog_message}" ]
     }
+  }
+}
+EOF
+
+cat <<'EOF' >> /etc/logstash/conf.d/16-tsys-trace.conf
+filter {
+  if [type] == "tsystrace" {
+    grok {
+  match => ["message", "%{YEAR:year}.%{MONTHNUM:month}.%{MONTHDAY:day} %{TIME} %{WORD:LOGLEVEL} \[%{DATA:Customer}\] %{JAVACLASS} %{GREEDYDATA:messageout}" ]
+    }
+
+    multiline {
+      pattern => "%{YEAR:year}.%{MONTHNUM:month}.%{MONTHDAY:day}"
+      what => "previous"
+      negate=> true
+    }
+  }
+
+  date {
+    match => [ "timestamp" , "yyyy-MM-dd HH:mm:ss.SSS" ]
   }
 }
 EOF
