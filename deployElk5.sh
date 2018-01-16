@@ -223,7 +223,7 @@ server {
 EOF
 
 echo -e "\e[32mGenerating Public Private Key Pair in /etc/pki/tls...\e[39m"
-sudo openssl req -subj '/CN=elk1-02.prod.com/' -x509 -days 3650 -batch -nodes -newkey rsa:2048 -keyout /etc/pki/tls/private/logstash-forwarder.key -out /etc/pki/tls/certs/logstash-forwarder.crt
+sudo openssl req -subj '/CN=tsys-elk1-01.sv5.us.genprod/' -x509 -days 3650 -batch -nodes -newkey rsa:2048 -keyout /etc/pki/tls/private/logstash-forwarder.key -out /etc/pki/tls/certs/logstash-forwarder.crt
 
 echo -e "\e[32mStarting nginx...\e[39m"
 systemctl start nginx
@@ -231,6 +231,9 @@ systemctl enable nginx
 
 echo -e "\e[32mInstalling Logstash...\e[39m"
 yum -y install logstash
+
+#Should switch to multiline code, as the filter is depricated
+/usr/share/logstash/bin/logstash-plugin install logstash-filter-multiline
 
 cat <<'EOF' >> /etc/logstash/conf.d/02-beats-input.conf
 input {
@@ -370,7 +373,7 @@ cat <<'EOF' >> /etc/logstash/conf.d/16-tsys-trace.conf
 filter {
   if [type] == "tsystrace" {
     grok {
-  match => ["message", "%{YEAR:year}.%{MONTHNUM:month}.%{MONTHDAY:day} %{TIME} %{WORD:LOGLEVEL} \[%{DATA:Customer}\] %{JAVACLASS} %{GREEDYDATA:messageout}" ]
+  match => ["message", "%{YEAR:year}.%{MONTHNUM:month}.%{MONTHDAY:day} %{TIME:time} %{WORD:loglevel} \[%{DATA:Customer}\] %{JAVACLASS} %{GREEDYDATA:messageout}" ]
     }
 
     multiline {
@@ -381,7 +384,8 @@ filter {
   }
 
   date {
-    match => [ "timestamp" , "yyyy-MM-dd HH:mm:ss.SSS" ]
+    match => [ "time" , "HH:mm:ss.SSS" ]
+    target => "@timestamp"
   }
 }
 EOF
