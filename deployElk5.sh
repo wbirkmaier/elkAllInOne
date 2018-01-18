@@ -373,20 +373,23 @@ cat <<'EOF' >> /etc/logstash/conf.d/16-tsys-trace.conf
 filter {
   if [type] == "tsystrace" {
     grok {
-  match => ["message", "%{YEAR:year}.%{MONTHNUM:month}.%{MONTHDAY:day} %{TIME:time} %{WORD:loglevel} \[%{DATA:Customer}\] %{JAVACLASS} %{GREEDYDATA:messageout}" ]
+      match => ["message", "%{YEAR:year}.%{MONTHNUM:month}.%{MONTHDAY:day} %{TIME:time} %{WORD:loglevel} \[%{DATA:Customer}\] %{JAVACLASS} %{GREEDYDATA:messageout}" ]
     }
-
-    multiline {
+      multiline {
       pattern => "%{YEAR:year}.%{MONTHNUM:month}.%{MONTHDAY:day}"
       what => "previous"
-      negate=> true
+      negate => true
     }
   }
 
-  date {
-    match => [ "time" , "HH:mm:ss.SSS" ]
-    target => "@timestamp"
+mutate {
+    add_field => { "wiltime" => "%{year} %{month} %{day} %{time}" }
   }
+
+date {
+  match => [ "wiltime", "yyyy MM dd HH:mm:ss.SSS" ]
+}
+
 }
 EOF
 
