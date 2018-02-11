@@ -393,6 +393,18 @@ date {
 }
 EOF
 
+cat <<'EOF' >> /etc/logstash/conf.d/17-clayeth-filter.conf
+filter {
+  if [type] == "clayeth" {
+    grok {
+	match => [ "message", "%{HOUR}:%{MINUTE}:%{SECOND}%{DATA:UUID}ETH: GPU0 %{BASE10NUM:GPU0Mh} Mh/s, GPU1 %{BASE10NUM:GPU1Mh} Mh/s, GPU2 %{BASE10NUM:GPU2Mh} Mh/s, GPU3 %{BASE10NUM:GPU3Mh} Mh/s, GPU4 %{BASE10NUM:GPU4Mh} Mh/s, GPU5 %{BASE10NUM:GPU5Mh}" ]
+	match => [ "message", "%{HOUR}:%{MINUTE}:%{SECOND}%{DATA:UUID}ETH - Total Speed: %{BASE10NUM:TOTALSPEED} Mh/s, Total Shares: %{BASE10NUM:TOTALSHARES}, Rejected: %{BASE10NUM:REJECTEDSHARES}, Time: %{GREEDYDATA:UPTIME}" ]
+	match => [ "message", "%{HOUR}:%{MINUTE}:%{SECOND}%{DATA:UUID}ETH: %{DATESTAMP} - SHARE FOUND - \(GPU %{NUMBER:SHAREFOUND}\)" ]
+    }
+  }
+}
+EOF
+
 #echo -e "\e[32mChecking Logstash Configuration...\e[39m"
 #service logstash configtest
 
